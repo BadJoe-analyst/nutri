@@ -59,8 +59,6 @@ def borrar_registro_de_hoy():
 st.set_page_config(page_title="Tracker Nutricional Diario", layout="centered")
 
 
-# ------------------ CARRERAS DESTACADAS ------------------ #
-
 if "carreras" not in st.session_state:
     st.session_state["carreras"] = {}
 
@@ -68,6 +66,17 @@ st.title("🏁 Próximas Carreras")
 
 hoy = datetime.today().date()
 
+# 1. FORMULARIO PARA AGREGAR CARRERA
+with st.expander("➕ Agregar nueva carrera"):
+    with st.form("form_carrera"):
+        nombre = st.text_input("Nombre de la carrera")
+        fecha = st.date_input("Fecha de la carrera", value=date.today())
+        submitted = st.form_submit_button("Agregar carrera")
+        if submitted:
+            st.session_state["carreras"][nombre] = fecha
+            st.success(f"Carrera '{nombre}' agregada para el {fecha.strftime('%d de %B de %Y')}.")
+
+# 2. MOSTRAR CARRERAS CON BOTÓN DE ELIMINAR
 if st.session_state["carreras"]:
     st.markdown("### 📅 Carreras registradas")
     
@@ -77,24 +86,13 @@ if st.session_state["carreras"]:
         with col1:
             st.markdown(f"<h2 style='color:#4CAF50;'>FALTAN {dias} DÍAS PARA {nombre.upper()}</h2>", unsafe_allow_html=True)
         with col2:
-            if st.button("🗑️", key=f"delete_{nombre}"):
+            eliminar = st.button("🗑️", key=f"delete_{nombre}")
+            if eliminar:
                 st.session_state["carreras"].pop(nombre)
                 st.success(f"Carrera '{nombre}' eliminada.")
                 st.experimental_rerun()
 else:
-    st.info("Agrega tus próximas carreras más abajo.")
-
-
-# ------------------ FORMULARIO PARA AGREGAR CARRERAS ------------------ #
-
-with st.expander("➕ Agregar nueva carrera"):
-    with st.form("form_carrera"):
-        nombre = st.text_input("Nombre de la carrera")
-        fecha = st.date_input("Fecha de la carrera", value=date.today())
-        submitted = st.form_submit_button("Agregar carrera")
-        if submitted:
-            st.session_state["carreras"][nombre] = fecha
-            st.success(f"Carrera '{nombre}' agregada para el {fecha.strftime('%d de %B de %Y')}.")
+    st.info("No hay carreras registradas aún.")
 
 # ------------------ TRACKER DE PORCIONES ------------------ #
 
