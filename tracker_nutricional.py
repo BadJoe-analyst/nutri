@@ -1,26 +1,17 @@
 import streamlit as st
-import gspread
 from datetime import date, datetime
-from google.oauth2.service_account import Credentials
-import json
+import pandas as pd
+import os
 
 # ------------------ FUNCIONES ------------------ #
 
-def guardar_en_google_sheets(tipo_dia, cumplimiento_total, cumplimiento_por_grupo):
+def guardar_en_excel(tipo_dia, cumplimiento_total, cumplimiento_por_grupo):
     try:
-        creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-        credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-        gc = gspread.authorize(credentials)
-
-        sh = gc.open("cumplimiento_tracker")
-        worksheet = sh.sheet1
-
-        fila = [
-            str(date.today()),
-            tipo_dia,
-            cumplimiento_total
-        ]
+        fila = {
+            "Fecha": str(date.today()),
+            "Tipo de día": tipo_dia,
+            "Cumplimiento total": cumplimiento_total
+        }
 
         orden = [
             "Cereales / Carbohidratos",
@@ -35,31 +26,39 @@ def guardar_en_google_sheets(tipo_dia, cumplimiento_total, cumplimiento_por_grup
         for grupo in orden:
             hechas, totales = cumplimiento_por_grupo[grupo]
             porcentaje = round((hechas / totales) * 100) if totales > 0 else 0
-            fila.append(porcentaje)
+            fila[grupo] = porcentaje
 
-        worksheet.append_row(fila)
+        archivo = "registro_cumplimiento.xlsx"
+
+        if os.path.exists(archivo):
+            df_existente = pd.read_excel(archivo)
+            df_nuevo = pd.DataFrame([fila])
+            df_combinado = pd.concat([df_existente, df_nuevo], ignore_index=True)
+        else:
+            df_combinado = pd.DataFrame([fila])
+
+        df_combinado.to_excel(archivo, index=False)
         return True
     except Exception as e:
-        st.error(f"❌ Error al guardar: {e}")
+        st.error(f"❌ Error al guardar en Excel: {e}")
         return False
+
 
 def borrar_registro_de_hoy():
     try:
-        creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
-        credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
-        gc = gspread.authorize(credentials)
+        archivo = "registro_cumplimiento.xlsx"
+        if not os.path.exists(archivo):
+            return False
 
-        sh = gc.open("cumplimiento_tracker")
-        worksheet = sh.sheet1
+        df = pd.read_excel(archivo)
         hoy = str(date.today())
+        df_filtrado = df[df["Fecha"] != hoy]
 
-        registros = worksheet.get_all_values()
-        for i, fila in enumerate(registros):
-            if fila and fila[0] == hoy:
-                worksheet.delete_rows(i + 1)
-                return True
-        return False
+        if len(df) == len(df_filtrado):
+            return False  # No se eliminó nada
+
+        df_filtrado.to_excel(archivo, index=False)
+        return True
     except Exception as e:
         st.error(f"❌ Error al borrar: {e}")
         return False
@@ -206,9 +205,9 @@ st.markdown("### 📂 Acciones")
 col1, col2 = st.columns(2)
 with col1:
     if st.button("📏 Guardar cumplimiento de hoy"):
-        exito = guardar_en_google_sheets(tipo_dia, cumplimiento_total, cumplimiento)
+        exito = guardar_en_excel(tipo_dia, cumplimiento_total, cumplimiento)
         if exito:
-            st.success("✅ Datos guardados exitosamente en Google Sheets.")
+            st.success("✅ Datos guardados exitosamente en Excel.")
 with col2:
     if st.button("🗑️ Eliminar cumplimiento de hoy"):
         eliminado = borrar_registro_de_hoy()
@@ -216,3 +215,14 @@ with col2:
             st.success("✅ Registro de hoy eliminado correctamente.")
         else:
             st.warning("⚠️ No se encontró un registro para hoy.")
+
+# ------------------ DESCARGA ------------------ #
+
+if os.path.exists("registro_cumplimiento.xlsx"):
+    with open("registro_cumplimiento.xlsx", "rb") as file:
+        st.download_button(
+            label="📥 Descargar Excel de registros",
+            data=file,
+            file_name="registro_cumplimiento.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
