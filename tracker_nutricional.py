@@ -1,20 +1,18 @@
 import streamlit as st
 import gspread
-import json
 from datetime import date, datetime
 from google.oauth2.service_account import Credentials
+import json
 
 # ------------------ FUNCIONES ------------------ #
 
 def guardar_en_google_sheets(tipo_dia, cumplimiento_total, cumplimiento_por_grupo):
     try:
         creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-        credentials = Credentials.from_service_account_info(
-            creds_dict, 
-            scopes=["https://www.googleapis.com/auth/spreadsheets"]
-        )
-
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+        credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         gc = gspread.authorize(credentials)
+
         sh = gc.open("cumplimiento_tracker")
         worksheet = sh.sheet1
 
@@ -48,8 +46,10 @@ def guardar_en_google_sheets(tipo_dia, cumplimiento_total, cumplimiento_por_grup
 def borrar_registro_de_hoy():
     try:
         creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-        credentials = Credentials.from_service_account_info(creds_dict)
+        scopes = ["https://www.googleapis.com/auth/spreadsheets"]
+        credentials = Credentials.from_service_account_info(creds_dict, scopes=scopes)
         gc = gspread.authorize(credentials)
+
         sh = gc.open("cumplimiento_tracker")
         worksheet = sh.sheet1
         hoy = str(date.today())
@@ -71,7 +71,7 @@ st.set_page_config(page_title="Tracker Nutricional Diario", layout="centered")
 if "carreras" not in st.session_state:
     st.session_state["carreras"] = {}
 
-st.title("🏁 Próximas Carreras")
+st.title("🏎️ Próximas Carreras")
 
 hoy = datetime.today().date()
 
@@ -87,8 +87,8 @@ with st.expander("➕ Agregar nueva carrera"):
 
 # 2. MOSTRAR CARRERAS CON BOTÓN DE ELIMINAR
 if st.session_state["carreras"]:
-    st.markdown("### 📅 Carreras registradas")
-    
+    st.markdown("### 🗕️ Carreras registradas")
+
     for nombre, fecha in list(st.session_state["carreras"].items()):
         dias = (fecha - hoy).days
         col1, col2 = st.columns([0.85, 0.15])
@@ -115,7 +115,7 @@ grupo_emojis = {
     "Frutas": "🍎",
     "Lácteos": "🧀",
     "ARL o Grasas": "🥑",
-    "Aceites": "🫒"
+    "Aceites": "🥒"
 }
 
 porciones_dia = {
@@ -205,7 +205,7 @@ st.markdown("### 📂 Acciones")
 
 col1, col2 = st.columns(2)
 with col1:
-    if st.button("💾 Guardar cumplimiento de hoy"):
+    if st.button("📏 Guardar cumplimiento de hoy"):
         exito = guardar_en_google_sheets(tipo_dia, cumplimiento_total, cumplimiento)
         if exito:
             st.success("✅ Datos guardados exitosamente en Google Sheets.")
