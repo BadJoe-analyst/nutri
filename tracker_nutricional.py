@@ -9,7 +9,11 @@ from google.oauth2.service_account import Credentials
 def guardar_en_google_sheets(tipo_dia, cumplimiento_total, cumplimiento_por_grupo):
     try:
         creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-        credentials = Credentials.from_service_account_info(creds_dict)
+        credentials = Credentials.from_service_account_info(
+            creds_dict, 
+            scopes=["https://www.googleapis.com/auth/spreadsheets"]
+        )
+
         gc = gspread.authorize(credentials)
         sh = gc.open("cumplimiento_tracker")
         worksheet = sh.sheet1
