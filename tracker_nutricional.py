@@ -1,12 +1,14 @@
 import streamlit as st
 import gspread
 from datetime import date, datetime
-
+from google.oauth2.service_account import Credentials
 # ------------------ FUNCIONES ------------------ #
 
 def guardar_en_google_sheets(tipo_dia, cumplimiento_total, cumplimiento_por_grupo):
     try:
-        gc = gspread.service_account(filename="credentials.json")
+        creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+        credentials = Credentials.from_service_account_info(creds_dict)
+        gc = gspread.authorize(credentials)
         sh = gc.open("cumplimiento_tracker")
         worksheet = sh.sheet1
 
